@@ -1,0 +1,39 @@
+# =============================================================================
+# Intifix Admin — Base dependencies (shared by all environments)
+# =============================================================================
+
+# --- Core framework ---
+Django==6.0.6
+djangorestframework==3.17.1
+
+# --- Admin UI theme ---
+django-unfold==0.97.0
+
+# --- AuthN / AuthZ (JWT issued by the external Auth Service) ---
+djangorestframework-simplejwt==5.5.1
+
+# --- API documentation (OpenAPI 3) ---
+drf-spectacular==0.29.0
+
+# --- Cross-origin & filtering ---
+django-cors-headers==4.9.0
+django-filter==25.2
+
+# --- Data stores ---
+psycopg2-binary==2.9.12          # PostgreSQL (local admin metadata)
+redis==8.0.0                      # Cache, throttling, token blacklist
+django-redis==5.4.0              # Django cache backend for Redis
+pymongo==4.17.0                  # MongoDB Atlas (audit / analytics docs)
+dnspython==2.8.0                 # mongodb+srv:// resolution
+
+# --- Outbound HTTP to microservices (Gateways / ACL) ---
+requests==2.34.2
+
+# --- Observability (Prometheus metrics; logs shipped to Loki via promtail) ---
+prometheus-client==0.21.1
+
+# --- Configuration (12-factor) ---
+django-environ==0.13.0
+
+# --- WSGI/ASGI server ---
+gunicorn==23.0.0

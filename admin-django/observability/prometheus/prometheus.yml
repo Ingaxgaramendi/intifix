@@ -1,0 +1,26 @@
+# Prometheus scrape & alerting configuration for Intifix Admin.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: intifix-admin
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+scrape_configs:
+  # The admin panel's application metrics.
+  - job_name: intifix-admin
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["web:8000"]
+
+  # Prometheus self-monitoring.
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

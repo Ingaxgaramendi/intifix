@@ -1,0 +1,39 @@
+# Promtail tails the admin panel's structured JSON logs and ships them to Loki.
+# The app writes JSON (LOG_JSON=true) to /app/logs, mounted here read-only.
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: intifix-admin-logs
+    static_configs:
+      - targets: ["localhost"]
+        labels:
+          job: intifix-admin
+          service: intifix-admin
+          __path__: /var/log/intifix/*.log
+    pipeline_stages:
+      # Parse the structured JSON log line.
+      - json:
+          expressions:
+            level: level
+            logger: logger
+            request_id: request_id
+            status: status
+            endpoint: endpoint
+      # Promote low-cardinality fields to Loki labels for fast filtering.
+      - labels:
+          level:
+          logger:
+      # Use the app timestamp if present.
+      - timestamp:
+          source: timestamp
+          format: RFC3339
+          fallback_formats:
+            - "2006-01-02 15:04:05"

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(mvn -f intifix-2026/pom.xml spring-boot:run)",
+      "PowerShell($v=Get-NetTCPConnection -State Listen -LocalPort 5173 -ErrorAction SilentlyContinue; if\\($v\\){\"5173 ARRIBA pid $\\($v.OwningProcess -join ','\\)\"}else{\"5173 CAIDO\"}; \"--- log ---\"; Get-Content \"C:\\\\Users\\\\ANDERSON\\\\Downloads\\\\intifix\\\\intifix-web\\\\vite-run.log\" -Tail 25 -ErrorAction SilentlyContinue)"
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+# =============================================================================
+# Intifix Admin — Production dependencies
+# =============================================================================
+-r base.txt
+
+# --- Static files serving ---
+whitenoise==6.9.0
+
+# --- Error tracking / APM ---
+sentry-sdk==2.22.0

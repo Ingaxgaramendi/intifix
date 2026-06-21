@@ -1,0 +1,31 @@
+# Alertmanager routing. Wire a real receiver (Slack/email/PagerDuty/webhook) by
+# setting its URL; the default groups alerts and exposes them on the Alertmanager
+# UI / API. Critical alerts are routed faster than warnings.
+route:
+  receiver: default
+  group_by: ["alertname", "severity"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - matchers:
+        - severity = "critical"
+      receiver: default
+      group_wait: 10s
+      repeat_interval: 1h
+
+receivers:
+  - name: default
+    # Example webhook receiver (replace with Slack/Opsgenie/etc.):
+    # slack_configs:
+    #   - api_url: ${SLACK_WEBHOOK_URL}
+    #     channel: "#intifix-alerts"
+    webhook_configs:
+      - url: "http://localhost:5001/"
+        send_resolved: true
+
+inhibit_rules:
+  # A firing ServiceDown silences the noisier SLO alerts for the same target.
+  - source_matchers: ["alertname = ServiceDown"]
+    target_matchers: ["severity =~ warning|critical"]
+    equal: ["instance"]

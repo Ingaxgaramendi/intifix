@@ -1,0 +1,24 @@
+# =============================================================================
+# Intifix Admin — Development dependencies
+# =============================================================================
+-r base.txt
+
+# --- Debugging / introspection ---
+django-debug-toolbar==5.0.1
+django-extensions==4.1
+ipython==9.0.2
+
+# --- Testing ---
+pytest==8.3.5
+pytest-django==4.10.0
+pytest-cov==6.0.0
+pytest-mock==3.14.0
+factory-boy==3.3.3
+respx==0.22.0                  # Mock httpx calls to microservices in tests
+
+# --- Quality / static analysis ---
+ruff==0.9.10
+mypy==1.15.0
+django-stubs==5.1.3
+djangorestframework-stubs==3.15.3
+pre-commit==4.1.0

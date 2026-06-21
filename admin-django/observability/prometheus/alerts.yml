@@ -1,0 +1,66 @@
+# Alerting rules for Intifix Admin.
+groups:
+  - name: intifix-admin-availability
+    rules:
+      - alert: ServiceDown
+        # The scrape target is unreachable (process crashed, OOM, network).
+        expr: up{job="intifix-admin"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Intifix Admin is down"
+          description: "Prometheus cannot scrape {{ $labels.instance }} for >1m."
+
+  - name: intifix-admin-slo
+    rules:
+      - alert: HighErrorRate
+        # >5% of requests are 5xx over the last 5 minutes.
+        expr: |
+          (
+            sum(rate(intifix_http_requests_total{status=~"5.."}[5m]))
+            /
+            sum(rate(intifix_http_requests_total[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High 5xx error rate (>5%)"
+          description: "5xx error ratio is {{ $value | humanizePercentage }} over 5m."
+
+      - alert: HighResponseTime
+        # p95 request latency above 1s over the last 5 minutes.
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(intifix_http_request_duration_seconds_bucket[5m])) by (le)
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Elevated p95 latency (>1s)"
+          description: "p95 latency is {{ $value | humanizeDuration }} over 5m."
+
+  - name: intifix-admin-resources
+    rules:
+      - alert: HighMemoryUsage
+        # Resident memory above 800 MiB sustained for 10 minutes.
+        expr: process_resident_memory_bytes{job="intifix-admin"} > 800 * 1024 * 1024
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage (>800 MiB)"
+          description: "RSS is {{ $value | humanize1024 }}B for >10m."
+
+      - alert: HighCpuUsage
+        # >0.8 CPU-core-seconds per second sustained for 10 minutes.
+        expr: rate(process_cpu_seconds_total{job="intifix-admin"}[5m]) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage (>80% of a core)"
+          description: "CPU usage is {{ $value | humanizePercentage }} of a core for >10m."
