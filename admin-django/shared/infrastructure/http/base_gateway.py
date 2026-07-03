@@ -163,12 +163,31 @@ class BaseGateway:
             )
         if status == 204 or not response.content:
             return None
-        raw_json = self._safe_json(response)
-        # Unwrap Spring's ApiResponse wrapper: {success, message, data}
-        if isinstance(raw_json, dict) and "data" in raw_json and "success" in raw_json:
+        return self._unwrap(self._safe_json(response), method, url)
+
+    def _unwrap(self, payload: Any, method: str, url: str) -> Any:
+        """Adapt the backend's response shape to what the gateways expect.
+
+        1. Unwrap Spring's ``ApiResponse`` envelope ``{success, message, data}``.
+        2. Normalize a Spring ``Page`` (``{content, totalElements, number, ...}``)
+           into the panel's ``{results, count, page, num_pages, page_size}`` shape.
+        """
+        data = payload
+        if isinstance(payload, dict) and "data" in payload and (
+            "success" in payload or "timestamp" in payload
+        ):
             logger.debug("unwrapping ApiResponse wrapper from %s %s", method, url)
-            return raw_json.get("data")
-        return raw_json
+            data = payload["data"]
+
+        if isinstance(data, dict) and "content" in data and "totalElements" in data:
+            return {
+                "results": data.get("content", []),
+                "count": data.get("totalElements", 0),
+                "page": data.get("number", 0) + 1,
+                "num_pages": data.get("totalPages", 1),
+                "page_size": data.get("size"),
+            }
+        return data
 
     @staticmethod
     def _safe_json(response: requests.Response) -> Any:

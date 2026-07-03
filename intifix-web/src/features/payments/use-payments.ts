@@ -35,9 +35,17 @@ export function useFacturaByPago(idPago: string | undefined, enabled: boolean) {
 export function usePagarServicio(idServicio: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ body, descripcion }: { body: CreatePagoRequest; descripcion?: string }) => {
+    mutationFn: async ({
+      body,
+      descripcion,
+      metadata,
+    }: {
+      body: CreatePagoRequest
+      descripcion?: string
+      metadata?: Record<string, string>
+    }) => {
       const pago = await paymentsApi.create(body)
-      return paymentsApi.procesar({ idPago: pago.idPago, descripcion })
+      return paymentsApi.procesar({ idPago: pago.idPago, descripcion, metadata })
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["pago-servicio", idServicio] })

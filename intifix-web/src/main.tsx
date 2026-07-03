@@ -7,6 +7,10 @@ import "./index.css"
 import { router } from "@/routes/app-router"
 import { queryClient } from "@/lib/query-client"
 import { Toaster } from "@/components/ui/sonner"
+import { useThemeStore } from "@/stores/theme-store"
+
+// Apply the persisted theme to <html> before first paint.
+useThemeStore.getState()
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

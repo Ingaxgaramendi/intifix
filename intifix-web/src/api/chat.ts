@@ -17,12 +17,18 @@ export const chatApi = {
     apiGet<Page<Conversacion> | Conversacion[]>("/api/v1/chat/conversaciones", pageParams(p)),
 
   crearConversacion: (body: CrearConversacionRequest) =>
-    apiPost<Conversacion>("/api/v1/chat/conversaciones", body),
+    // "Already exists" (409) is benign — we navigate to the chat regardless.
+    apiPost<Conversacion>("/api/v1/chat/conversaciones", body, { skipErrorToast: true }),
+
+  crearConsulta: (idTecnico: string) =>
+    apiPost<Conversacion>("/api/v1/chat/conversaciones/consulta", { idTecnico }),
 
   conversacion: (id: string) => apiGet<Conversacion>(`/api/v1/chat/conversaciones/${id}`),
 
   archivar: (id: string) => apiPatch<Conversacion>(`/api/v1/chat/conversaciones/${id}/archivar`),
+  desarchivar: (id: string) => apiPatch<Conversacion>(`/api/v1/chat/conversaciones/${id}/desarchivar`),
   bloquear: (id: string) => apiPatch<Conversacion>(`/api/v1/chat/conversaciones/${id}/bloquear`),
+  desbloquear: (id: string) => apiPatch<Conversacion>(`/api/v1/chat/conversaciones/${id}/desbloquear`),
   eliminarConversacion: (id: string) => apiDelete<void>(`/api/v1/chat/conversaciones/${id}`),
 
   /* ---- Mensajes ---- */
@@ -40,7 +46,10 @@ export const chatApi = {
   eliminar: (id: string) => apiDelete<void>(`/api/v1/chat/mensajes/${id}`),
 
   marcarLeidos: (idConversacion: string) =>
-    apiPost<void>(`/api/v1/chat/mensajes/conversacion/${idConversacion}/leer`),
+    // Background nicety — a transient backend version conflict must not toast.
+    apiPost<void>(`/api/v1/chat/mensajes/conversacion/${idConversacion}/leer`, undefined, {
+      skipErrorToast: true,
+    }),
 
   noLeidos: (idConversacion: string) =>
     apiGet<number>(`/api/v1/chat/mensajes/conversacion/${idConversacion}/no-leidos`),

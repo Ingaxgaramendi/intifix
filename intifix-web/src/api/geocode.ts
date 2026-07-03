@@ -28,6 +28,8 @@ interface NominatimAddress {
   municipality?: string
   county?: string
   province?: string
+  /** En Perú la provincia (admin nivel 6) suele llegar aquí, p.ej. "Lima Metropolitana". */
+  state_district?: string
   region?: string
   state?: string
 }
@@ -48,14 +50,19 @@ function buildDireccion(a: NominatimAddress | undefined, fallback: string): stri
 
 function toResult(it: NominatimItem): GeocodeResult {
   const a = it.address
+  const distrito = a?.city ?? a?.town ?? a?.village ?? a?.municipality ?? a?.city_district
+  // Provincia: Nominatim la entrega de forma inconsistente en Perú. La mayoría de
+  // las veces llega en `state_district`; si no, usamos el distrito como aproximación
+  // (el distrito capital comparte nombre con su provincia).
+  const provincia = a?.province ?? a?.county ?? a?.state_district ?? distrito
   return {
     lat: Number(it.lat),
     lng: Number(it.lon),
     displayName: it.display_name,
     direccion: buildDireccion(a, it.display_name),
     departamento: a?.region ?? a?.state,
-    provincia: a?.province ?? a?.county,
-    distrito: a?.city ?? a?.town ?? a?.village ?? a?.municipality ?? a?.city_district,
+    provincia,
+    distrito,
   }
 }
 

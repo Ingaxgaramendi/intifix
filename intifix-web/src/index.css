@@ -2,11 +2,12 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/inter";
+@import "@fontsource-variable/plus-jakarta-sans";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --font-heading: var(--font-sans);
+    --font-heading: 'Plus Jakarta Sans Variable', 'Inter Variable', sans-serif;
     --font-sans: 'Inter Variable', sans-serif;
     --color-success: var(--success);
     --color-warning: var(--warning);
@@ -53,135 +54,115 @@
 
 :root {
     /* INTIFIX Premium Color System - Light Mode */
-    
-    /* Base Colors */
-    --background: oklch(1 0 0);
+
+    /* Base — fondo crema muy sutil, cards blancas puras → elevación natural */
+    --background: oklch(0.985 0.002 60);
     --foreground: oklch(0.15 0.005 265);
-    
-    /* Card Colors */
+
     --card: oklch(1 0 0);
     --card-foreground: oklch(0.15 0.005 265);
-    
-    /* Popover Colors */
+
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.15 0.005 265);
-    
-    /* Primary - INTIFIX Coral (Airbnb "Rausch" #FF385C) */
-    --primary: oklch(0.645 0.227 16.9);
+
+    /* Primary - INTIFIX Vino */
+    --primary: oklch(0.38 0.13 16);
     --primary-foreground: oklch(1 0 0);
-    
-    /* Secondary - Neutral Light */
-    --secondary: oklch(0.96 0.005 265);
+
+    --secondary: oklch(0.96 0.004 260);
     --secondary-foreground: oklch(0.15 0.005 265);
-    
-    /* Muted */
-    --muted: oklch(0.96 0.005 265);
+
+    --muted: oklch(0.96 0.004 260);
     --muted-foreground: oklch(0.45 0.005 265);
-    
-    /* Accent */
-    --accent: oklch(0.94 0.005 265);
+
+    --accent: oklch(0.94 0.004 260);
     --accent-foreground: oklch(0.15 0.005 265);
-    
-    /* Destructive - Error */
+
     --destructive: oklch(0.60 0.20 25);
     --destructive-foreground: oklch(1 0 0);
-    
-    /* Border & Input */
-    --border: oklch(0.90 0.005 265);
-    --input: oklch(0.94 0.005 265);
-    
-    /* Ring - Focus */
-    --ring: oklch(0.645 0.227 16.9);
 
-    /* Semantic Colors */
+    --border: oklch(0.87 0.006 260);
+    --input: oklch(0.96 0.004 260);
+
+    --ring: oklch(0.38 0.13 16);
+
     --success: oklch(0.70 0.18 145);
     --warning: oklch(0.75 0.15 85);
     --info: oklch(0.65 0.15 230);
 
-    /* Chart Colors */
-    --chart-1: oklch(0.645 0.227 16.9);
+    --chart-1: oklch(0.38 0.13 16);
     --chart-2: oklch(0.65 0.15 230);
     --chart-3: oklch(0.70 0.18 145);
     --chart-4: oklch(0.75 0.15 85);
     --chart-5: oklch(0.68 0.18 300);
 
-    /* Radius - Airbnb-style soft corners */
     --radius: 0.75rem;
 
-    /* Sidebar */
-    --sidebar: oklch(0.985 0 0);
+    --sidebar: oklch(0.99 0.001 60);
     --sidebar-foreground: oklch(0.15 0.005 265);
-    --sidebar-primary: oklch(0.645 0.227 16.9);
+    --sidebar-primary: oklch(0.38 0.13 16);
     --sidebar-primary-foreground: oklch(1 0 0);
-    --sidebar-accent: oklch(0.96 0.005 265);
+    --sidebar-accent: oklch(0.96 0.004 260);
     --sidebar-accent-foreground: oklch(0.15 0.005 265);
-    --sidebar-border: oklch(0.90 0.005 265);
-    --sidebar-ring: oklch(0.645 0.227 16.9);
+    --sidebar-border: oklch(0.87 0.006 260);
+    --sidebar-ring: oklch(0.38 0.13 16);
 }
 
 .dark {
-    /* INTIFIX Premium Color System - Dark Mode */
-    
-    /* Base Colors */
-    --background: oklch(0.09 0.005 265);
-    --foreground: oklch(0.98 0.005 265);
-    
-    /* Card Colors */
-    --card: oklch(0.15 0.005 265);
-    --card-foreground: oklch(0.98 0.005 265);
-    
-    /* Popover Colors */
-    --popover: oklch(0.15 0.005 265);
-    --popover-foreground: oklch(0.98 0.005 265);
-    
-    /* Primary - Lighter coral for dark mode */
-    --primary: oklch(0.68 0.21 16.9);
+    /* INTIFIX — Warm Slate Dark Mode
+       Estrategia: superficies neutral-cálidas (hue 260, chroma mínima).
+       El vino primary aparece como acento vívido que da toda la identidad.
+       Sin "dark sucio": a baja lightness, chroma alta tiñe los fondos de forma antiestética.
+    */
+
+    --background: oklch(0.14 0.005 260);
+    --foreground: oklch(0.95 0.006 260);
+
+    --card: oklch(0.18 0.007 260);
+    --card-foreground: oklch(0.95 0.006 260);
+
+    --popover: oklch(0.21 0.007 260);
+    --popover-foreground: oklch(0.95 0.006 260);
+
+    /* Primary — vino vívido, pop sobre fondo oscuro */
+    --primary: oklch(0.65 0.20 16);
     --primary-foreground: oklch(1 0 0);
-    
-    /* Secondary - Darker Neutral */
-    --secondary: oklch(0.25 0.005 265);
-    --secondary-foreground: oklch(0.98 0.005 265);
-    
-    /* Muted */
-    --muted: oklch(0.25 0.005 265);
-    --muted-foreground: oklch(0.65 0.005 265);
-    
-    /* Accent */
-    --accent: oklch(0.35 0.005 265);
-    --accent-foreground: oklch(0.98 0.005 265);
-    
-    /* Destructive - Error (lighter for dark mode) */
-    --destructive: oklch(0.65 0.20 25);
-    --destructive-foreground: oklch(0.98 0.005 265);
-    
-    /* Border & Input */
-    --border: oklch(0.25 0.005 265);
-    --input: oklch(0.25 0.005 265);
-    
-    /* Ring - Focus */
-    --ring: oklch(0.68 0.21 16.9);
 
-    /* Semantic Colors */
-    --success: oklch(0.75 0.18 145);
-    --warning: oklch(0.80 0.15 85);
-    --info: oklch(0.70 0.15 230);
+    --secondary: oklch(0.24 0.008 260);
+    --secondary-foreground: oklch(0.92 0.006 260);
 
-    /* Chart Colors */
-    --chart-1: oklch(0.68 0.21 16.9);
-    --chart-2: oklch(0.70 0.15 230);
-    --chart-3: oklch(0.75 0.18 145);
-    --chart-4: oklch(0.80 0.15 85);
-    --chart-5: oklch(0.75 0.18 300);
+    --muted: oklch(0.22 0.007 260);
+    --muted-foreground: oklch(0.62 0.010 260);
 
-    /* Sidebar */
-    --sidebar: oklch(0.15 0.005 265);
-    --sidebar-foreground: oklch(0.98 0.005 265);
-    --sidebar-primary: oklch(0.68 0.21 16.9);
+    --accent: oklch(0.26 0.008 260);
+    --accent-foreground: oklch(0.95 0.006 260);
+
+    --destructive: oklch(0.52 0.22 22);
+    --destructive-foreground: oklch(0.98 0.003 260);
+
+    --border: oklch(0.30 0.010 260);
+    --input: oklch(0.14 0.005 260);
+
+    --ring: oklch(0.65 0.20 16);
+
+    --success: oklch(0.72 0.18 145);
+    --warning: oklch(0.78 0.15 85);
+    --info: oklch(0.68 0.15 230);
+
+    --chart-1: oklch(0.65 0.20 16);
+    --chart-2: oklch(0.68 0.15 230);
+    --chart-3: oklch(0.72 0.18 145);
+    --chart-4: oklch(0.78 0.15 85);
+    --chart-5: oklch(0.72 0.18 300);
+
+    --sidebar: oklch(0.16 0.006 260);
+    --sidebar-foreground: oklch(0.93 0.006 260);
+    --sidebar-primary: oklch(0.65 0.20 16);
     --sidebar-primary-foreground: oklch(1 0 0);
-    --sidebar-accent: oklch(0.25 0.005 265);
-    --sidebar-accent-foreground: oklch(0.98 0.005 265);
-    --sidebar-border: oklch(0.25 0.005 265);
-    --sidebar-ring: oklch(0.68 0.21 16.9);
+    --sidebar-accent: oklch(0.24 0.008 260);
+    --sidebar-accent-foreground: oklch(0.93 0.006 260);
+    --sidebar-border: oklch(0.28 0.009 260);
+    --sidebar-ring: oklch(0.65 0.20 16);
 }
 
 @layer base {
@@ -193,5 +174,130 @@
     }
   html {
     @apply font-sans;
+    color-scheme: light;
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
     }
+  html.dark {
+    color-scheme: dark;
+    }
+  /* Propagate dark color-scheme to native form controls so dropdowns/selects
+     render with dark OS chrome instead of white. */
+  .dark select,
+  .dark input,
+  .dark textarea {
+    color-scheme: dark;
+    }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { transition-duration: 0ms; }
+    }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    letter-spacing: -0.02em;
+    }
+
+  /* Transición suave al cambiar tema */
+  *, *::before, *::after {
+    transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+    transition-duration: 250ms;
+    transition-timing-function: ease-in-out;
+    }
+
+  /* Scrollbar personalizado */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    border-radius: 3px;
+    }
+  ::-webkit-scrollbar-thumb:hover { background-color: var(--muted-foreground); }
+
+  /* Selección de texto con color primario */
+  ::selection {
+    background-color: color-mix(in oklch, var(--primary) 25%, transparent);
+    color: var(--foreground);
+    }
+}
+
+/* Subtle chat backdrop (WhatsApp-style): a faint dotted texture over a tint. */
+.chat-bg {
+  background-color: color-mix(in oklab, var(--color-muted) 35%, var(--color-background));
+  background-image: radial-gradient(
+    color-mix(in oklab, var(--color-foreground) 5%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
+}
+
+/* ---------------- Landing flourishes (wine-themed) ---------------- */
+
+/* Wine gradient text for headlines. */
+.text-gradient-wine {
+  background-image: linear-gradient(
+    100deg,
+    var(--color-primary),
+    oklch(0.52 0.16 18),
+    oklch(0.64 0.17 32)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Infinite logo/chip marquee (the track holds two copies → translate -50%). */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.animate-marquee { animation: marquee 30s linear infinite; }
+.marquee-mask:hover .animate-marquee { animation-play-state: paused; }
+
+/* Slow floating blobs for ambient wine glow behind sections. */
+@keyframes float-slow {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(0, -24px) scale(1.07); }
+}
+.animate-float-slow { animation: float-slow 10s ease-in-out infinite; }
+
+/* Animated wine sheen used on the CTA card. */
+@keyframes wine-pan {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.animate-wine-pan {
+  background-size: 200% 200%;
+  animation: wine-pan 12s ease infinite;
+}
+
+/* ---------------- Public profile flourishes ---------------- */
+
+/* Faint dotted texture overlaid on the wine profile cover for depth. */
+.cover-dots {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.22) 1px, transparent 1px);
+  background-size: 15px 15px;
+}
+
+/* Diagonal sheen that sweeps across the cover (paired with .animate-wine-pan). */
+.cover-sheen {
+  background-image: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.14) 50%,
+    transparent 70%
+  );
+}
+
+/* Conic wine→gold gradient ring that slowly rotates behind profile avatars. */
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+.animate-spin-slow { animation: spin-slow 8s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee,
+  .animate-float-slow,
+  .animate-wine-pan,
+  .animate-spin-slow { animation: none; }
 }

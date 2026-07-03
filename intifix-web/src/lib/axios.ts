@@ -8,6 +8,13 @@ import { useAuthStore } from "@/stores/auth-store"
 import type { ApiResponse } from "@/types/api"
 import type { AuthTokens } from "@/types/auth"
 
+// Opt-in flag to suppress the automatic error toast for an expected/benign error.
+declare module "axios" {
+  export interface AxiosRequestConfig {
+    skipErrorToast?: boolean
+  }
+}
+
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080"
 
 /** Main instance. Use the typed helpers below rather than this directly. */
@@ -72,9 +79,14 @@ http.interceptors.response.use(
       return Promise.reject(error)
     }
 
-    // Surface the backend message; skip noisy toasts for the silent auth probe.
+    // Surface the backend message; skip noisy toasts for the silent auth probe,
+    // calls that opted out, and blocked-account codes (they show their own UI).
     const message = error.response?.data?.message ?? error.message ?? "Error de red"
-    if (!isAuthCall || status !== 401) toast.error(message)
+    const errorCode = (error.response?.data as Record<string, unknown> | undefined)?.errorCode as string | undefined
+    const isAccountBlocked = errorCode === "ACCOUNT_SUSPENDED" || errorCode === "ACCOUNT_BANNED"
+    if ((!isAuthCall || status !== 401) && !original?.skipErrorToast && !isAccountBlocked) {
+      toast.error(message)
+    }
     return Promise.reject(error)
   },
 )

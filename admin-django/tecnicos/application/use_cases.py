@@ -36,6 +36,7 @@ __all__ = [
     "ApproveTechnician",
     "RejectTechnician",
     "SuspendTechnician",
+    "ReactivateTechnician",
 ]
 
 
@@ -139,3 +140,14 @@ class RejectTechnician(_TransitionTechnicianStatus):
 class SuspendTechnician(_TransitionTechnicianStatus):
     target = TechnicianStatus.SUSPENDED
     action = "technicians.suspend"
+
+
+class ReactivateTechnician:
+    """Reactivate a suspended technician via the dedicated /reactivar endpoint."""
+
+    def __init__(self, repository: TechnicianRepository) -> None:
+        self._repository = repository
+
+    def execute(self, *, technician_id: str, actor_id: str, reason: str | None = None) -> TechnicianDTO:
+        updated = self._repository.reactivate(technician_id)
+        return TechnicianDTO.from_entity(updated)

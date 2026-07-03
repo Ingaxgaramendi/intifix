@@ -11,17 +11,24 @@ const NAV_LINKS = [
   { label: "Cómo funciona", href: "#como-funciona" },
   { label: "Especialidades", href: "#especialidades" },
   { label: "Beneficios", href: "#beneficios" },
-  { label: "Testimonios", href: "#testimonios" },
+  { label: "Nosotros", href: "#nosotros" },
+  { label: "Precios", href: "#precios" },
 ]
 
-function Logo() {
+function Logo({ scrolled }: { scrolled: boolean }) {
   return (
-    <a href="#top" className="flex items-center gap-2 font-semibold text-lg tracking-tight">
-      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+    <a
+      href="#top"
+      className={cn(
+        "flex items-center gap-2 font-semibold text-lg tracking-tight transition-colors",
+        scrolled ? "text-foreground" : "text-white",
+      )}
+    >
+      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm ring-1 ring-white/20">
         <Wrench className="h-5 w-5" />
       </span>
       <span>
-        INTI<span className="text-primary">FIX</span>
+        INTI<span className={scrolled ? "text-primary" : "text-rose-300"}>FIX</span>
       </span>
     </a>
   )
@@ -51,6 +58,15 @@ export function LandingNav() {
     }
   }, [mobileOpen])
 
+  // Links are light over the (dark) video hero, and revert to muted text once
+  // the bar condenses into its blurred light background on scroll.
+  const navLinkClass = cn(
+    "rounded-full px-4 py-2 text-sm font-medium transition-colors",
+    scrolled
+      ? "text-muted-foreground hover:bg-accent hover:text-foreground"
+      : "text-white/85 hover:bg-white/10 hover:text-white",
+  )
+
   return (
     <motion.header
       initial={{ y: -24, opacity: 0 }}
@@ -65,22 +81,23 @@ export function LandingNav() {
     >
       <Container size="xl">
         <nav className="flex h-16 items-center justify-between">
-          <Logo />
+          <Logo scrolled={scrolled} />
 
           <div className="hidden items-center gap-1 md:flex">
             {NAV_LINKS.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="rounded-full px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              >
+              <a key={link.href} href={link.href} className={navLinkClass}>
                 {link.label}
               </a>
             ))}
           </div>
 
           <div className="hidden items-center gap-2 md:flex">
-            <Button variant="ghost" size="sm" asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(!scrolled && "text-white hover:bg-white/10 hover:text-white")}
+              asChild
+            >
               <Link to={paths.login}>Iniciar sesión</Link>
             </Button>
             <Button size="sm" asChild>
@@ -92,7 +109,10 @@ export function LandingNav() {
             type="button"
             aria-label={mobileOpen ? "Cerrar menú" : "Abrir menú"}
             onClick={() => setMobileOpen((v) => !v)}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-accent md:hidden"
+            className={cn(
+              "inline-flex h-10 w-10 items-center justify-center rounded-xl transition-colors md:hidden",
+              scrolled ? "text-foreground hover:bg-accent" : "text-white hover:bg-white/10",
+            )}
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>

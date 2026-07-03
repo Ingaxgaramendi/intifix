@@ -59,8 +59,25 @@ export default {
       },
       keyframes: {
         "fade-in": { from: { opacity: "0" }, to: { opacity: "1" } },
+        "fade-in-up": {
+          from: { opacity: "0", transform: "translateY(8px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "slide-in-right": {
+          from: { opacity: "0", transform: "translateX(16px)" },
+          to: { opacity: "1", transform: "translateX(0)" },
+        },
+        "toast-in": {
+          from: { opacity: "0", transform: "translateX(calc(100% + 16px))" },
+          to: { opacity: "1", transform: "translateX(0)" },
+        },
       },
-      animation: { "fade-in": "fade-in 0.2s ease-out" },
+      animation: {
+        "fade-in": "fade-in 0.2s ease-out",
+        "fade-in-up": "fade-in-up 0.25s ease-out",
+        "slide-in-right": "slide-in-right 0.2s ease-out",
+        "toast-in": "toast-in 0.3s ease-out",
+      },
     },
   },
   plugins: [],

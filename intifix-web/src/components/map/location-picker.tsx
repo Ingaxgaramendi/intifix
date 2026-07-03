@@ -2,6 +2,7 @@ import "leaflet/dist/leaflet.css"
 import L from "leaflet"
 import { useEffect, useMemo, useRef } from "react"
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from "react-leaflet"
+import { cn } from "@/lib/utils"
 
 export interface LatLng {
   lat: number
@@ -69,7 +70,7 @@ export function LocationPicker({
 
   return (
     <div
-      className={className}
+      className={cn("relative z-0 isolate", className)}
       style={{ height }}
     >
       <MapContainer

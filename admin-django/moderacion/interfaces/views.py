@@ -40,6 +40,7 @@ from ..application.use_cases import (
     ReviewReport,
     UnblockUser,
 )
+from ..infrastructure.apelaciones_gateway import ApelacionesGateway
 from ..infrastructure.mongo_stores import MongoCommentStore, MongoHistoryStore
 from ..infrastructure.reports_gateway import ReportsGateway
 from ..infrastructure.users_block_gateway import UsersBlockGateway
@@ -221,3 +222,45 @@ class UnblockUserView(APIView):
             report_id=body.validated_data.get("report_id") or None,
         )
         return Response({"user_id": user_id, "blocked": False})
+
+
+# ─── Appeals (apelaciones) ────────────────────────────────────────────────────
+
+
+class ApelacionListView(APIView):
+    permission_classes = [IsAuthenticated, HasPermission.of(Permission.REPORTS_VIEW)]
+
+    def get(self, request: Request) -> Response:
+        estado = request.query_params.get("estado") or None
+        try:
+            page = max(1, int(request.query_params.get("page", 1)))
+            page_size = max(1, min(100, int(request.query_params.get("page_size", 20))))
+        except (ValueError, TypeError):
+            page, page_size = 1, 20
+
+        gateway = ApelacionesGateway(bearer_token=bearer_token(request))
+        data = gateway.list(estado=estado, page=page, page_size=page_size)
+        return Response(data)
+
+
+class ApelacionesPendientesCountView(APIView):
+    permission_classes = [IsAuthenticated, HasPermission.of(Permission.REPORTS_VIEW)]
+
+    def get(self, request: Request) -> Response:
+        gateway = ApelacionesGateway(bearer_token=bearer_token(request))
+        count = gateway.pendientes_count()
+        return Response({"pendientes": count})
+
+
+class RevisarApelacionView(APIView):
+    permission_classes = [IsAuthenticated, HasPermission.of(Permission.REPORTS_RESOLVE)]
+
+    def patch(self, request: Request, apelacion_id: str) -> Response:
+        estado = (request.data.get("estado") or "").strip()
+        if not estado:
+            return Response({"detail": "El campo 'estado' es requerido."}, status=http_status.HTTP_400_BAD_REQUEST)
+        nota_admin = request.data.get("nota_admin") or None
+
+        gateway = ApelacionesGateway(bearer_token=bearer_token(request))
+        result = gateway.revisar(apelacion_id, estado=estado, nota_admin=nota_admin)
+        return Response(result)

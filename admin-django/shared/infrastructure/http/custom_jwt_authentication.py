@@ -1,53 +1,70 @@
 """
 Custom JWT authentication that doesn't require a local user database.
 
-The Spring backend (intifix-2026) issues JWTs with the user ID in the standard 'sub'
-claim, not 'user_id'. Since this admin panel doesn't have local users (all users
-exist in the Spring backend), we need to authenticate by building a lightweight
-user object directly from the JWT claims without hitting the database.
+The Intifix backend (intifix-2026, Spring Boot) issues HS256 JWTs with this
+contract: ``sub`` = user id, ``correo`` = email, ``roles`` = list of role names,
+``typ`` = "access"|"refresh". It does **not** emit simple-jwt's ``token_type`` /
+``jti`` claims, so simple-jwt's ``JWTAuthentication`` would reject these tokens.
+
+We therefore decode directly with the shared backend decoder (PyJWT) and build a
+lightweight, DB-free principal from the claims — the admin panel owns no local
+user table for platform accounts.
+
+``request.auth`` is the raw claims dict (RBAC permission classes read ``roles``
+from it); ``request.user`` is the ``BackendUser``.
 """
 from __future__ import annotations
 
-from django.contrib.auth.models import AnonymousUser
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework.authentication import BaseAuthentication
+from rest_framework.exceptions import AuthenticationFailed
+
+from shared.infrastructure.security.jwt import decode_bearer, is_access_token
 
 
-class ClaimsBasedJWTAuthentication(JWTAuthentication):
-    """
-    JWT authentication that builds a user from claims without DB lookup.
-    
-    This class overrides the default simple-jwt behavior of loading a user from
-    the database. Instead, it creates a lightweight user object directly from the
-    JWT claims, which is suitable when:
-    - The auth service is the source of truth for users
-    - No local user database exists
-    - The JWT contains all necessary claims (sub, roles, etc.)
-    """
+class BackendUser:
+    """Minimal authenticated user reconstructed from the JWT claims (no DB)."""
 
-    def get_user(self, validated_token: dict) -> AnonymousUser:
-        """
-        Build a lightweight user from JWT claims without DB lookup.
-        
-        Args:
-            validated_token: The decoded and validated JWT payload
-            
-        Returns:
-            A lightweight AnonymousUser-like object with id and roles attributes
-        """
-        # Extract user ID from 'sub' claim (standard JWT claim)
-        user_id = validated_token.get("sub")
-        
-        # Extract roles for RBAC
-        roles = validated_token.get("roles", []) or []
+    def __init__(self, *, user_id: str | None, email: str, roles: list[str]) -> None:
+        self.id = user_id
+        self.pk = user_id
+        self.email = email
+        self.roles = roles
+        self.is_authenticated = True
+        self.is_active = True
+        self.is_anonymous = False
+
+    def __str__(self) -> str:
+        return self.email or self.id or "anonymous"
+
+
+class ClaimsBasedJWTAuthentication(BaseAuthentication):
+    """Authenticate a request from the backend's JWT claims, without a DB lookup."""
+
+    def authenticate(self, request):  # noqa: ANN001
+        header = request.headers.get("Authorization", "")
+        if not header.startswith("Bearer "):
+            return None  # no credentials → let AllowAny / anonymous handle it
+
+        claims = decode_bearer(header[7:].strip())
+        if claims is None:
+            raise AuthenticationFailed("Token inválido o expirado.")
+        if not is_access_token(claims):
+            raise AuthenticationFailed("Se requiere un access token.")
+
+        roles = claims.get("roles", []) or []
         if not isinstance(roles, (list, tuple)):
             roles = [roles]
-        
-        # Create a lightweight user object
-        # We use AnonymousUser as a base but add our custom attributes
-        user = AnonymousUser()
-        user.id = user_id
-        user.roles = roles
-        user.is_authenticated = True
-        
-        return user
+
+        user = BackendUser(
+            user_id=_str(claims.get("sub")),
+            email=claims.get("correo", ""),
+            roles=list(roles),
+        )
+        return (user, claims)
+
+    def authenticate_header(self, request):  # noqa: ANN001
+        return "Bearer"
+
+
+def _str(value) -> str | None:  # noqa: ANN001
+    return str(value) if value is not None else None

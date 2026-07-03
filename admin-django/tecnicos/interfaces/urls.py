@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import (
     ApproveTechnicianView,
+    ReactivateTechnicianView,
     RejectTechnicianView,
     SuspendTechnicianView,
     TechnicianDetailView,
@@ -22,4 +23,5 @@ urlpatterns = [
     path("<str:technician_id>/approve/", ApproveTechnicianView.as_view(), name="technician-approve"),
     path("<str:technician_id>/reject/", RejectTechnicianView.as_view(), name="technician-reject"),
     path("<str:technician_id>/suspend/", SuspendTechnicianView.as_view(), name="technician-suspend"),
+    path("<str:technician_id>/reactivate/", ReactivateTechnicianView.as_view(), name="technician-reactivate"),
 ]

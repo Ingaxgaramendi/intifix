@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react"
 import { Link } from "react-router-dom"
-import { Plus, ChevronLeft, ChevronRight, ClipboardList, MapPin, AlertCircle } from "lucide-react"
+import { Plus, ChevronLeft, ChevronRight, ClipboardList, MapPin, AlertCircle, Wrench } from "lucide-react"
 import { useAuthStore } from "@/stores/auth-store"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -19,7 +19,7 @@ const MODALIDAD_LABEL: Record<string, string> = {
   EN_CASA_CLIENTE: "En domicilio",
   EN_TALLER_TECNICO: "En taller",
 }
-import { useMisServicios } from "./use-services"
+import { useEspecialidadesMap, useMisServicios } from "./use-services"
 
 const FILTERS: { label: string; value: EstadoServicio | "TODOS" }[] = [
   { label: "Todos", value: "TODOS" },
@@ -30,33 +30,52 @@ const FILTERS: { label: string; value: EstadoServicio | "TODOS" }[] = [
   { label: "Finalizados", value: "FINALIZADO" },
 ]
 
-function ServicioCard({ s }: { s: Servicio }) {
+function ServicioCard({ s, especialidad }: { s: Servicio; especialidad?: string }) {
+  const portada = s.fotos?.[0]
   return (
     <Link
       to={paths.cliente.servicioDetalle(s.idServicio)}
-      className="group flex flex-col rounded-2xl border border-border bg-card p-5 transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+      className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg dark:hover:border-primary/60 dark:hover:shadow-xl"
     >
-      <div className="flex items-start justify-between gap-3">
-        <h3 className="font-semibold leading-snug group-hover:text-primary">{s.titulo}</h3>
-        <EstadoBadge estado={s.estado} />
-      </div>
-      <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{s.descripcion}</p>
-      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-        {s.modalidad && (
-          <span className="font-medium text-foreground">
-            {MODALIDAD_LABEL[s.modalidad] ?? s.modalidad}
+      {portada && (
+        <div className="relative aspect-video w-full overflow-hidden bg-muted">
+          <img src={portada} alt={s.titulo} className="h-full w-full object-cover" loading="lazy" />
+          {(s.fotos?.length ?? 0) > 1 && (
+            <span className="absolute bottom-2 right-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white">
+              +{(s.fotos?.length ?? 0) - 1}
+            </span>
+          )}
+        </div>
+      )}
+      <div className="flex flex-1 flex-col p-5">
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="font-semibold leading-snug group-hover:text-primary">{s.titulo}</h3>
+          <EstadoBadge estado={s.estado} />
+        </div>
+        {especialidad && (
+          <span className="mt-2 inline-flex w-fit items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+            <Wrench className="h-3 w-3" />
+            {especialidad}
           </span>
         )}
-        {servicioDireccion(s) && (
-          <span className="inline-flex items-center gap-1">
-            <MapPin className="h-3.5 w-3.5" />
-            {servicioDireccion(s)}
-          </span>
-        )}
-      </div>
-      <div className="mt-4 flex items-center justify-between border-t border-border pt-3 text-sm">
-        <span className="text-muted-foreground">{formatDate(s.fechaCreacion)}</span>
-        <span className="font-semibold">{formatCurrency(servicioPresupuesto(s))}</span>
+        <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{s.descripcion}</p>
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+          {s.modalidad && (
+            <span className="font-medium text-foreground">
+              {MODALIDAD_LABEL[s.modalidad] ?? s.modalidad}
+            </span>
+          )}
+          {servicioDireccion(s) && (
+            <span className="inline-flex items-center gap-1">
+              <MapPin className="h-3.5 w-3.5" />
+              {servicioDireccion(s)}
+            </span>
+          )}
+        </div>
+        <div className="mt-auto flex items-center justify-between border-t border-border pt-3 text-sm">
+          <span className="text-muted-foreground">{formatDate(s.fechaCreacion)}</span>
+          <span className="font-semibold">{formatCurrency(servicioPresupuesto(s))}</span>
+        </div>
       </div>
     </Link>
   )
@@ -67,6 +86,7 @@ export function MisServiciosPage() {
   const [page, setPage] = useState(0)
   const [filter, setFilter] = useState<EstadoServicio | "TODOS">("TODOS")
   const { data, isLoading, isError, refetch } = useMisServicios(idCliente, page)
+  const especialidades = useEspecialidadesMap()
 
   const visible = useMemo(() => {
     const content = data?.content ?? []
@@ -141,7 +161,11 @@ export function MisServiciosPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {visible.map((s) => (
-            <ServicioCard key={s.idServicio} s={s} />
+            <ServicioCard
+              key={s.idServicio}
+              s={s}
+              especialidad={s.idEspecialidad ? especialidades.get(s.idEspecialidad) : undefined}
+            />
           ))}
         </div>
       )}

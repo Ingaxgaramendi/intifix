@@ -15,5 +15,5 @@ class ChatGateway(BaseGateway):
 
     def list_messages(self, conversation_id: str, *, params: dict | None = None):
         return self.get(
-            f"/api/v1/chat/conversaciones/{conversation_id}/mensajes", params=params
+            f"/api/v1/chat/mensajes/conversacion/{conversation_id}", params=params
         )

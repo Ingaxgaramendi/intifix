@@ -1,0 +1,97 @@
+services:
+  # ─── Backend Spring Boot ──────────────────────────────────────────────────
+  - type: web
+    name: intifix-backend
+    runtime: java
+    plan: free                      # cambiar a "starter" ($7/mes) si necesitas uptime 24/7
+    rootDir: intifix-2026
+    buildCommand: mvn -B -DskipTests package
+    startCommand: java -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -jar target/*.jar
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: ""
+      # BD — llenar en Render Dashboard > Environment
+      - key: DB_POSTGRES_HOST
+        sync: false
+      - key: DB_POSTGRES_PORT
+        value: "23098"              # puerto Aiven
+      - key: DB_POSTGRES_NAME
+        value: defaultdb
+      - key: DB_POSTGRES_USER
+        sync: false
+      - key: DB_POSTGRES_PASSWORD
+        sync: false
+      - key: DB_POSTGRES_SSLMODE
+        value: require
+      - key: DB_MONGO_HOST
+        sync: false
+      - key: DB_MONGO_NAME
+        value: Intifix_mongo
+      - key: DB_MONGO_USER
+        sync: false
+      - key: DB_MONGO_PASSWORD
+        sync: false
+      - key: REDIS_HOST
+        sync: false
+      - key: REDIS_PORT
+        value: "6379"
+      - key: REDIS_USERNAME
+        value: default
+      - key: REDIS_PASSWORD
+        sync: false
+      - key: REDIS_SSL
+        value: "true"
+      # Seguridad — nunca hardcodear aquí, llenar en Dashboard
+      - key: JWT_SECRET
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: cloudinary_cloud_name
+        sync: false
+      - key: cloudinary_api_key
+        sync: false
+      - key: cloudinary_api_secret
+        sync: false
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      # URL de tu frontend en producción (para emails de recuperación)
+      - key: APP_FRONTEND_URL
+        sync: false
+      # CORS — dominios de Firebase Hosting (ej: https://intifix-web.web.app)
+      # Llenar una vez que Firebase asigne las URLs de producción.
+      - key: CORS_ORIGIN_1
+        sync: false
+      - key: CORS_ORIGIN_2
+        sync: false
+      - key: CORS_ORIGIN_3
+        sync: false
+
+  # ─── Panel admin Django ───────────────────────────────────────────────────
+  - type: web
+    name: intifix-admin
+    runtime: python
+    plan: free
+    rootDir: admin-django
+    buildCommand: pip install -r requirements/production.txt && python manage.py collectstatic --noinput
+    startCommand: gunicorn intifix_admin.wsgi:application --config gunicorn.conf.py
+    healthCheckPath: /health/
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: intifix_admin.settings.production
+      - key: DJANGO_SECRET_KEY
+        sync: false
+      - key: DJANGO_ALLOWED_HOSTS
+        sync: false                 # ej: intifix-admin.onrender.com
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SIGNING_KEY
+        sync: false                 # mismo JWT_SECRET del backend Spring
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false                 # URL de intifix-admin-web en Vercel

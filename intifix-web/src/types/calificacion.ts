@@ -15,6 +15,9 @@ export interface CreateCalificacionRequest {
 export interface Calificacion {
   idCalificacion?: string
   idServicio: string
+  /** Autor de la reseña; el backend no manda el nombre, se resuelve por este id. */
+  idCliente?: string
+  idUsuarioTecnico?: string
   puntuacion: number
   comentario?: string
   puntualidad?: number
@@ -26,11 +29,20 @@ export interface Calificacion {
   aspectosMejorar?: string[]
   nombreCliente?: string
   fechaCreacion?: string
+  /** Nombre real del campo de fecha en el backend (CalificacionResponse). */
+  fechaCalificacion?: string
   [key: string]: unknown
 }
 
+/** GET /api/v1/technicians/reputation/{id} — nombres reales del ReputacionResponse. */
 export interface Reputacion {
   idUsuarioTecnico?: string
+  /** Promedio de estrellas mantenido por el backend. */
+  promedioCalificacion?: number
+  totalResenas?: number
+  totalServicios?: number
+  actualizadoEn?: string
+  // Nombres alternativos tolerados (compat con respuestas antiguas).
   puntuacionPromedio?: number
   calificacionPromedio?: number
   totalCalificaciones?: number
@@ -39,4 +51,8 @@ export interface Reputacion {
 }
 
 export const reputacionPromedio = (r?: Reputacion): number | undefined =>
-  r?.puntuacionPromedio ?? r?.calificacionPromedio
+  r?.promedioCalificacion ?? r?.puntuacionPromedio ?? r?.calificacionPromedio
+
+/** Nº total de reseñas, tolerando nombres alternativos del backend. */
+export const reputacionTotalResenas = (r?: Reputacion): number | undefined =>
+  r?.totalResenas ?? r?.totalCalificaciones

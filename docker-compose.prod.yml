@@ -1,0 +1,108 @@
+# =============================================================================
+# IntiFix — Docker Compose para PRODUCCIÓN
+#
+# Uso:
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Variables requeridas: definir en .env o inyectar vía secretos del orquestador.
+# NO hardcodear contraseñas aquí. Ver intifix-2026/.env.example y
+# admin-django/.env.example para referencia de todas las variables.
+# =============================================================================
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # Backend principal — Spring Boot (intifix-2026)
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./intifix-2026
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: ""            # perfil vacío = production defaults de application.yml
+      DB_POSTGRES_HOST: ${DB_POSTGRES_HOST}
+      DB_POSTGRES_PORT: ${DB_POSTGRES_PORT:-5432}
+      DB_POSTGRES_NAME: ${DB_POSTGRES_NAME}
+      DB_POSTGRES_USER: ${DB_POSTGRES_USER}
+      DB_POSTGRES_PASSWORD: ${DB_POSTGRES_PASSWORD}
+      DB_POSTGRES_SSLMODE: ${DB_POSTGRES_SSLMODE:-require}
+      DB_MONGO_HOST: ${DB_MONGO_HOST}
+      DB_MONGO_NAME: ${DB_MONGO_NAME}
+      DB_MONGO_USER: ${DB_MONGO_USER}
+      DB_MONGO_PASSWORD: ${DB_MONGO_PASSWORD}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_USERNAME: ${REDIS_USERNAME:-default}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_SSL: ${REDIS_SSL:-true}
+      JWT_SECRET: ${JWT_SECRET}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      cloudinary_cloud_name: ${cloudinary_cloud_name:-}
+      cloudinary_api_key: ${cloudinary_api_key:-}
+      cloudinary_api_secret: ${cloudinary_api_secret:-}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      APP_FRONTEND_URL: ${APP_FRONTEND_URL}
+    volumes:
+      - backend_uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+
+  # ---------------------------------------------------------------------------
+  # Panel admin — Django (admin-django)
+  # ---------------------------------------------------------------------------
+  admin:
+    build:
+      context: ./admin-django
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./admin-django/.env
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # Frontend admin — Vite build estático servido por nginx
+  # ---------------------------------------------------------------------------
+  admin-web:
+    build:
+      context: ./intifix-admin-web
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5174:80"
+    depends_on:
+      - admin
+
+  # ---------------------------------------------------------------------------
+  # Frontend principal — Vite build estático servido por nginx
+  # ---------------------------------------------------------------------------
+  web:
+    build:
+      context: ./intifix-web
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  backend_uploads:

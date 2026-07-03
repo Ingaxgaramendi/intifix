@@ -1,0 +1,24 @@
+# ─── Secretos y entorno ───────────────────────────────────────────────────────
+*.env
+!*.env.example
+*.env.local
+*.env.production.local
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
+spring-boot.log
+
+# ─── Claude Code (configuración local del IDE) ────────────────────────────────
+.claude/settings.local.json
+
+# ─── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ─── Editores ─────────────────────────────────────────────────────────────────
+.idea/
+*.iml
+.vscode/
+*.suo
+*.user

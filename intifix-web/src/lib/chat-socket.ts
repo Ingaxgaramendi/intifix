@@ -1,11 +1,18 @@
 import { Client, type IMessage } from "@stomp/stompjs"
-import type { ChatReadEvent, ChatTypingEvent, CreateMensajeRequest, Mensaje } from "@/types/chat"
+import type {
+  ChatDeliveredEvent,
+  ChatReadEvent,
+  ChatTypingEvent,
+  CreateMensajeRequest,
+  Mensaje,
+} from "@/types/chat"
 
 const WS_URL = import.meta.env.VITE_WS_URL ?? "ws://localhost:8080/ws/chat"
 
 export interface ChatSocketHandlers {
   onMessage?: (m: Mensaje) => void
   onRead?: (e: ChatReadEvent) => void
+  onDelivered?: (e: ChatDeliveredEvent) => void
   onTyping?: (e: ChatTypingEvent) => void
   onConnectChange?: (connected: boolean) => void
 }
@@ -40,6 +47,10 @@ export function createChatClient(token: string, handlers: ChatSocketHandlers) {
         const e = parse<ChatReadEvent>(f)
         if (e) handlers.onRead?.(e)
       })
+      client.subscribe("/user/queue/delivered", (f) => {
+        const e = parse<ChatDeliveredEvent>(f)
+        if (e) handlers.onDelivered?.(e)
+      })
       client.subscribe("/user/queue/typing", (f) => {
         const e = parse<ChatTypingEvent>(f)
         if (e) handlers.onTyping?.(e)
@@ -63,6 +74,8 @@ export function createChatClient(token: string, handlers: ChatSocketHandlers) {
       safePublish(client, "/app/chat.send", body),
     sendRead: (idConversacion: string) =>
       safePublish(client, "/app/chat.read", { idConversacion }),
+    sendDelivered: (idConversacion: string) =>
+      safePublish(client, "/app/chat.delivered", { idConversacion }),
     sendTyping: (idConversacion: string, escribiendo: boolean) =>
       safePublish(client, "/app/chat.typing", { idConversacion, escribiendo }),
   }

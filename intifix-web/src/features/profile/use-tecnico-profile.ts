@@ -96,6 +96,19 @@ export function useRemoverEspecialidad(idUsuario: string) {
   })
 }
 
+export function useActualizarCertificadoEspecialidad(idUsuario: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ idEspecialidad, url }: { idEspecialidad: string; url: string }) =>
+      techniciansApi.actualizarCertificadoEspecialidad(idUsuario, idEspecialidad, url),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["tecnico-especialidades", idUsuario] })
+      toast.success("Certificado actualizado")
+    },
+    onError: () => toast.error("No se pudo actualizar el certificado"),
+  })
+}
+
 /** Creates the location point, then assigns it to the technician (query param). */
 export function useUpdateLocation(idUsuario: string) {
   const qc = useQueryClient()

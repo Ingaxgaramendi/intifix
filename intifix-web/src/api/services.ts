@@ -11,6 +11,8 @@ import type {
   Servicio,
 } from "@/types/service"
 
+export type { TipoFecha } from "@/types/service"
+
 const pageParams = (p?: PageParams) => ({
   params: { page: p?.page ?? 0, size: p?.size ?? 12, ...(p?.sort ? { sort: p.sort } : {}) },
 })
@@ -110,4 +112,14 @@ export const servicesApi = {
 
   evidenciasByServicio: (idServicio: string) =>
     apiGet<Evidencia[]>(`/api/v1/services/evidencias/servicio/${idServicio}`),
+
+  /* ---- Direct requests (TECNICO) ---- */
+  solicitudesDirectas: (p?: PageParams) =>
+    apiGet<Page<Servicio>>("/api/v1/services/directas", pageParams(p)),
+
+  aceptarDirecta: (idServicio: string) =>
+    apiPost<Servicio>(`/api/v1/services/directas/${idServicio}/aceptar`, {}),
+
+  rechazarDirecta: (idServicio: string) =>
+    apiPost<Servicio>(`/api/v1/services/directas/${idServicio}/rechazar`, {}),
 }

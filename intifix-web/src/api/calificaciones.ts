@@ -15,7 +15,21 @@ export const calificacionesApi = {
     apiGet<Page<Calificacion> | Calificacion[]>(`${base}/tecnico/${idTec}`, pageParams(p)),
 
   promedioPuntuacion: (idTec: string) =>
-    apiGet<number>(`${base}/tecnico/${idTec}/promedio/puntuacion`),
+    apiGet<number | null>(`${base}/tecnico/${idTec}/promedio/puntuacion`),
+
+  contarPorTecnico: (idTec: string) => apiGet<number>(`${base}/tecnico/${idTec}/count`),
+
+  promedioPuntualidad: (idTec: string) =>
+    apiGet<number>(`${base}/tecnico/${idTec}/promedio/puntualidad`),
+
+  promedioProfesionalismo: (idTec: string) =>
+    apiGet<number>(`${base}/tecnico/${idTec}/promedio/profesionalismo`),
+
+  promedioCalidadTrabajo: (idTec: string) =>
+    apiGet<number>(`${base}/tecnico/${idTec}/promedio/calidad-trabajo`),
+
+  promedioComunicacion: (idTec: string) =>
+    apiGet<number>(`${base}/tecnico/${idTec}/promedio/comunicacion`),
 
   porcentajeRecomendacion: (idTec: string) =>
     apiGet<number>(`${base}/tecnico/${idTec}/porcentaje-recomendacion`),

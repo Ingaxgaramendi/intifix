@@ -4,6 +4,8 @@ export interface Especialidad {
   idEspecialidad: string
   nombre: string
   descripcion?: string
+  /** Certificado que acredita la especialidad (solo en "mis especialidades"). */
+  certificadoUrl?: string
   [key: string]: unknown
 }
 
@@ -19,6 +21,10 @@ export interface Tecnico {
   experienciaAnios?: number
   fotoPerfilUrl?: string
   tarifaBase?: number
+  /** Bio / "Acerca de mí" del técnico (editable, opcional). */
+  descripcion?: string
+  /** Teléfono de contacto público (opcional). */
+  telefonoContacto?: string
   disponibilidad?: Disponibilidad
   estadoAprobacion?: EstadoAprobacion
   especialidades?: Array<string | Especialidad>
@@ -57,6 +63,9 @@ export interface UpdateTecnicoRequest {
   experienciaAnios?: number
   tarifaBase?: number
   disponibilidad?: Disponibilidad
+  fotoPerfilUrl?: string
+  descripcion?: string
+  telefonoContacto?: string
 }
 
 /** PATCH /api/v1/technicians/{idUsuario}/documentos — send only changed URLs. */
@@ -66,3 +75,62 @@ export interface UpdateDocumentosRequest {
   antecedentePenalUrl?: string
   certificadoTecnicoUrl?: string
 }
+
+/* ------------------------------- Agenda ---------------------------------- */
+
+/** Weekly recurring schedule slot. diaSemana: 0=domingo … 6=sábado. */
+export interface Horario {
+  idHorario: string
+  idUsuarioTecnico: string
+  diaSemana: number
+  horaInicio: string // "HH:mm"
+  horaFin: string // "HH:mm"
+  activo: boolean
+  [key: string]: unknown
+}
+
+/** POST /api/v1/technicians/schedules */
+export interface CreateHorarioRequest {
+  idUsuarioTecnico: string
+  diaSemana: number
+  horaInicio: string
+  horaFin: string
+  activo: boolean
+}
+
+/** PUT /api/v1/technicians/schedules/{idHorario} — all optional. */
+export interface UpdateHorarioRequest {
+  diaSemana?: number
+  horaInicio?: string
+  horaFin?: string
+  activo?: boolean
+}
+
+/** Day-off / unavailability window (ISO datetimes). */
+export interface ExcepcionHorario {
+  idExcepcion: string
+  idUsuarioTecnico: string
+  fechaInicio: string // ISO
+  fechaFin: string // ISO
+  motivo: string
+  [key: string]: unknown
+}
+
+/** POST /api/v1/technicians/schedule-exceptions */
+export interface CreateExcepcionRequest {
+  idUsuarioTecnico: string
+  fechaInicio: string
+  fechaFin: string
+  motivo: string
+}
+
+/** Day-of-week labels, indexed 0=domingo … 6=sábado. */
+export const DIAS_SEMANA = [
+  "Domingo",
+  "Lunes",
+  "Martes",
+  "Miércoles",
+  "Jueves",
+  "Viernes",
+  "Sábado",
+] as const

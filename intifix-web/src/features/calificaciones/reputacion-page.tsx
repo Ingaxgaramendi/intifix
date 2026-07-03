@@ -3,8 +3,40 @@ import { useAuthStore } from "@/stores/auth-store"
 import { Skeleton } from "@/components/ui/skeleton"
 import { StarRating } from "@/components/shared/star-rating"
 import { formatDate } from "@/lib/format"
-import { reputacionPromedio, type Calificacion } from "@/types/calificacion"
-import { useCalificacionesTecnico, useReputacion } from "./use-calificaciones"
+import { PerfilLink } from "@/components/shared/perfil-link"
+import { paths } from "@/routes/paths"
+import { useClienteNombre } from "@/features/services/use-services"
+import { reputacionPromedio, reputacionTotalResenas, type Calificacion } from "@/types/calificacion"
+import {
+  useCalificacionesTecnico,
+  usePromediosCategoria,
+  usePromedioPuntuacion,
+  useReputacion,
+  useTotalCalificaciones,
+  type PromediosCategoria,
+} from "./use-calificaciones"
+
+const CATEGORIAS: { key: keyof PromediosCategoria; label: string }[] = [
+  { key: "puntualidad", label: "Puntualidad" },
+  { key: "profesionalismo", label: "Profesionalismo" },
+  { key: "calidadTrabajo", label: "Calidad del trabajo" },
+  { key: "comunicacion", label: "Comunicación" },
+]
+
+function CategoriaRow({ label, value }: { label: string; value?: number }) {
+  const pct = value != null ? Math.max(0, Math.min(100, (value / 5) * 100)) : 0
+  return (
+    <div>
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="font-semibold">{value != null ? value.toFixed(1) : "—"}</span>
+      </div>
+      <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted">
+        <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  )
+}
 
 function StatCard({
   icon: Icon,
@@ -30,16 +62,21 @@ function StatCard({
 }
 
 function ReviewCard({ c }: { c: Calificacion }) {
+  const { data: nombreResuelto } = useClienteNombre(c.nombreCliente ? undefined : c.idCliente)
+  const nombre = c.nombreCliente ?? nombreResuelto ?? "Cliente"
+  const perfilTo = c.idCliente ? paths.tecnico.clientePerfil(c.idCliente) : undefined
   return (
     <div className="rounded-2xl border border-border bg-card p-5">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
-            {(c.nombreCliente ?? "C").slice(0, 2).toUpperCase()}
+            {nombre.slice(0, 2).toUpperCase()}
           </span>
           <div>
-            <p className="font-medium">{c.nombreCliente ?? "Cliente"}</p>
-            <p className="text-xs text-muted-foreground">{formatDate(c.fechaCreacion)}</p>
+            <PerfilLink to={perfilTo} state={{ idServicio: c.idServicio }} className="font-medium">
+              {nombre}
+            </PerfilLink>
+            <p className="text-xs text-muted-foreground">{formatDate(c.fechaCalificacion ?? c.fechaCreacion)}</p>
           </div>
         </div>
         <StarRating value={c.puntuacion} size={16} />
@@ -58,10 +95,14 @@ function ReviewCard({ c }: { c: Calificacion }) {
 export function ReputacionPage() {
   const idTec = useAuthStore((s) => s.user?.idUsuario)
   const reputacion = useReputacion(idTec)
+  const categorias = usePromediosCategoria(idTec)
   const reviews = useCalificacionesTecnico(idTec, 0)
+  // Fuentes reales (AVG/COUNT en BD): la reputación cacheada queda en 0.
+  const promedioReal = usePromedioPuntuacion(idTec)
+  const totalReal = useTotalCalificaciones(idTec)
 
-  const promedio = reputacionPromedio(reputacion.data)
-  const total = reputacion.data?.totalCalificaciones ?? reviews.data?.length
+  const promedio = promedioReal.data ?? reputacionPromedio(reputacion.data)
+  const total = totalReal.data ?? reputacionTotalResenas(reputacion.data) ?? reviews.data?.length
   const items = reviews.data ?? []
   const pctRecomendacion =
     reputacion.data?.porcentajeRecomendacion ??
@@ -100,6 +141,27 @@ export function ReputacionPage() {
           />
         </div>
       )}
+
+      {/* Per-category breakdown */}
+      <section className="rounded-2xl border border-border bg-card p-6">
+        <h2 className="font-semibold">Desglose por categoría</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Promedio de tus calificaciones en cada aspecto (sobre 5).
+        </p>
+        {categorias.isLoading ? (
+          <div className="mt-5 space-y-4">
+            {CATEGORIAS.map((c) => (
+              <Skeleton key={c.key} className="h-8 w-full rounded-lg" />
+            ))}
+          </div>
+        ) : (
+          <div className="mt-5 grid gap-5 sm:grid-cols-2">
+            {CATEGORIAS.map((c) => (
+              <CategoriaRow key={c.key} label={c.label} value={categorias.data?.[c.key]} />
+            ))}
+          </div>
+        )}
+      </section>
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold">Reseñas</h2>

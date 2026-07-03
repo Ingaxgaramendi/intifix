@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react"
-import { Bell, BellOff, Check, CheckCheck, Trash2, AlertCircle } from "lucide-react"
+import { useNavigate } from "react-router-dom"
+import { BellOff, Check, CheckCheck, Trash2, AlertCircle, BellRing, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Pagination } from "@/components/shared/pagination"
 import { cn } from "@/lib/utils"
-import { formatDateTime } from "@/lib/format"
+import { formatRelative } from "@/lib/format"
 import type { Notificacion } from "@/api/notifications"
 import {
   useEliminarNotif,
@@ -12,45 +13,58 @@ import {
   useMarcarTodas,
   useNotificaciones,
 } from "./use-notifications"
+import {
+  requestDesktopPermission,
+  supportsDesktopNotifications,
+} from "./use-notifications-realtime"
+import { notifVisual, routeForNotif } from "./notif-meta"
 
 function NotifRow({
   n,
   onRead,
   onDelete,
+  onOpen,
   busy,
 }: {
   n: Notificacion
   onRead: () => void
   onDelete: () => void
+  onOpen?: () => void
   busy: boolean
 }) {
+  const { icon: Icon, color, bg } = notifVisual(n.tipo)
+  const clickable = !!onOpen
+
   return (
     <div
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onClick={onOpen}
+      onKeyDown={clickable ? (e) => (e.key === "Enter" || e.key === " ") && onOpen?.() : undefined}
       className={cn(
-        "flex items-start gap-3 rounded-2xl border p-4 transition-colors",
+        "group flex items-start gap-3 rounded-2xl border p-4 transition-all",
         n.leida ? "border-border bg-card" : "border-primary/30 bg-primary/5",
+        clickable && "cursor-pointer hover:-translate-y-0.5 hover:shadow-lg dark:hover:shadow-xl",
       )}
     >
-      <span
-        className={cn(
-          "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
-          n.leida ? "bg-muted text-muted-foreground" : "bg-primary/15 text-primary",
-        )}
-      >
-        <Bell className="h-4.5 w-4.5" />
+      <span className={cn("mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", bg, color)}>
+        <Icon className="h-5 w-5" />
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <p className={cn("truncate", n.leida ? "font-medium" : "font-semibold")}>{n.titulo}</p>
           {!n.leida && <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />}
         </div>
-        <p className="mt-0.5 text-sm text-muted-foreground">{n.mensaje}</p>
-        <p className="mt-1 text-xs text-muted-foreground">{formatDateTime(n.fechaCreacion)}</p>
+        <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">{n.cuerpo}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{formatRelative(n.creadoEn)}</p>
       </div>
       <div className="flex shrink-0 items-center gap-1">
         {!n.leida && (
           <button
-            onClick={onRead}
+            onClick={(e) => {
+              e.stopPropagation()
+              onRead()
+            }}
             disabled={busy}
             aria-label="Marcar como leída"
             className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
@@ -59,7 +73,10 @@ function NotifRow({
           </button>
         )}
         <button
-          onClick={onDelete}
+          onClick={(e) => {
+            e.stopPropagation()
+            onDelete()
+          }}
           disabled={busy}
           aria-label="Eliminar"
           className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
@@ -71,7 +88,45 @@ function NotifRow({
   )
 }
 
+/** Banner que invita a activar las notificaciones de escritorio (push). */
+function DesktopPushBanner() {
+  const [permission, setPermission] = useState(
+    supportsDesktopNotifications ? Notification.permission : "denied",
+  )
+  const [dismissed, setDismissed] = useState(false)
+
+  if (!supportsDesktopNotifications || permission !== "default" || dismissed) return null
+
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+        <BellRing className="h-5 w-5" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="font-semibold">Activa las notificaciones de escritorio</p>
+        <p className="text-sm text-muted-foreground">
+          Recibe avisos al instante aunque tengas otra pestaña abierta.
+        </p>
+      </div>
+      <Button
+        size="sm"
+        onClick={async () => setPermission((await requestDesktopPermission()) ? "granted" : "denied")}
+      >
+        Activar
+      </Button>
+      <button
+        onClick={() => setDismissed(true)}
+        aria-label="Descartar"
+        className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  )
+}
+
 export function NotificacionesPage() {
+  const navigate = useNavigate()
   const [page, setPage] = useState(0)
   const [soloNoLeidas, setSoloNoLeidas] = useState(false)
   const { data, isLoading, isError, refetch } = useNotificaciones(page)
@@ -86,6 +141,13 @@ export function NotificacionesPage() {
 
   const hayNoLeidas = (data?.content ?? []).some((n) => !n.leida)
   const busy = marcarLeida.isPending || eliminar.isPending
+
+  const abrir = (n: Notificacion) => {
+    const target = routeForNotif(n)
+    if (!target) return
+    if (!n.leida) marcarLeida.mutate(n.id)
+    navigate(target)
+  }
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -104,6 +166,8 @@ export function NotificacionesPage() {
           Marcar todas
         </Button>
       </header>
+
+      <DesktopPushBanner />
 
       <div className="flex gap-2">
         {[
@@ -158,6 +222,7 @@ export function NotificacionesPage() {
               busy={busy}
               onRead={() => marcarLeida.mutate(n.id)}
               onDelete={() => eliminar.mutate(n.id)}
+              onOpen={routeForNotif(n) ? () => abrir(n) : undefined}
             />
           ))}
         </div>

@@ -41,12 +41,16 @@ class TechnicianDocument:
 
     The admin panel only surfaces its metadata and a (typically signed, expiring)
     URL so a moderator can review it.
+    ``label`` is an optional human-readable override (used for per-specialty
+    certificates where the specialty name gives more context than the generic
+    "certificate" type label).
     """
 
     type: DocumentType
     url: str
     verified: bool = False
     uploaded_at: datetime | None = None
+    label: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

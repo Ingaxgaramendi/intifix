@@ -25,6 +25,7 @@ class TechnicianDocumentSerializer(serializers.Serializer):
     url = serializers.URLField(read_only=True)
     verified = serializers.BooleanField(read_only=True)
     uploaded_at = serializers.DateTimeField(read_only=True, allow_null=True)
+    label = serializers.CharField(read_only=True, allow_null=True)
 
 
 class TechnicianListQuerySerializer(serializers.Serializer):

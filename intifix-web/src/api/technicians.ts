@@ -1,10 +1,15 @@
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "@/lib/axios"
 import type { Page, PageParams } from "@/types/api"
 import type {
+  CreateExcepcionRequest,
+  CreateHorarioRequest,
   Disponibilidad,
   Especialidad,
+  ExcepcionHorario,
+  Horario,
   Tecnico,
   UpdateDocumentosRequest,
+  UpdateHorarioRequest,
   UpdateTecnicoRequest,
 } from "@/types/technician"
 
@@ -40,6 +45,17 @@ export const techniciansApi = {
       `/api/v1/technicians/specialties/tecnico/${idUsuarioTecnico}/especialidad/${idEspecialidad}`,
     ),
 
+  /** Sube/actualiza el certificado que acredita una especialidad del técnico. */
+  actualizarCertificadoEspecialidad: (
+    idUsuarioTecnico: string,
+    idEspecialidad: string,
+    certificadoUrl: string,
+  ) =>
+    apiPatch<void>(
+      `/api/v1/technicians/specialties/tecnico/${idUsuarioTecnico}/especialidad/${idEspecialidad}/certificado`,
+      { certificadoUrl },
+    ),
+
   detalle: (id: string) => apiGet<Tecnico>(`/api/v1/technicians/${id}/detalle`),
 
   update: (idUsuario: string, body: UpdateTecnicoRequest) =>
@@ -65,4 +81,31 @@ export const techniciansApi = {
 
   availableByUbicacion: (idUbicacion: string) =>
     apiGet<TecnicoList>(`/api/v1/technicians/location/${idUbicacion}/available-approved`),
+
+  /* ------------------------------ Agenda --------------------------------- */
+
+  /** Weekly recurring schedule of a technician. */
+  horarios: (idTecnico: string) =>
+    apiGet<Horario[]>(`/api/v1/technicians/schedules/tecnico/${idTecnico}`),
+
+  crearHorario: (body: CreateHorarioRequest) =>
+    apiPost<Horario>("/api/v1/technicians/schedules", body),
+
+  actualizarHorario: (idHorario: string, body: UpdateHorarioRequest) =>
+    apiPut<Horario>(`/api/v1/technicians/schedules/${idHorario}`, body),
+
+  eliminarHorario: (idHorario: string) =>
+    apiDelete<void>(`/api/v1/technicians/schedules/${idHorario}`),
+
+  /** Day-off / unavailability windows. */
+  excepciones: (idTecnico: string) =>
+    apiGet<ExcepcionHorario[]>(
+      `/api/v1/technicians/schedule-exceptions/tecnico/${idTecnico}`,
+    ),
+
+  crearExcepcion: (body: CreateExcepcionRequest) =>
+    apiPost<ExcepcionHorario>("/api/v1/technicians/schedule-exceptions", body),
+
+  eliminarExcepcion: (idExcepcion: string) =>
+    apiDelete<void>(`/api/v1/technicians/schedule-exceptions/${idExcepcion}`),
 }

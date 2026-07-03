@@ -14,6 +14,27 @@ export function useClienteProfile(idUsuario: string | undefined) {
   })
 }
 
+/** Perfil público del cliente que un técnico consulta (sin datos sensibles). */
+export function useClientePerfilPublico(idUsuario: string | undefined) {
+  return useQuery({
+    queryKey: ["cliente-perfil-publico", idUsuario],
+    queryFn: () => clientesApi.perfilPublico(idUsuario!),
+    enabled: !!idUsuario,
+  })
+}
+
+/** Fija/actualiza la ubicación base guardada del cliente. */
+export function useUpdateClienteLocation(idUsuario: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (idUbicacion: string) => clientesApi.updateLocation(idUsuario, idUbicacion),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["cliente", idUsuario] })
+      toast.success("Ubicación guardada")
+    },
+  })
+}
+
 export function useUpdateCliente(idUsuario: string) {
   const qc = useQueryClient()
   return useMutation({

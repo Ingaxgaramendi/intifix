@@ -27,6 +27,7 @@ from ..application.use_cases import (
     GetTechnician,
     GetTechnicianDocuments,
     ListTechnicians,
+    ReactivateTechnician,
     RejectTechnician,
     SuspendTechnician,
 )
@@ -140,6 +141,15 @@ class RejectTechnicianView(_ModerationActionView):
 
 class SuspendTechnicianView(_ModerationActionView):
     use_case_cls = SuspendTechnician
+    permission_classes = [IsAuthenticated, HasPermission.of(Permission.TECHNICIANS_SUSPEND)]
+
+    @audit_action(AuditAction.STATUS_CHANGE, modulo="technicians", entidad="technician")
+    def patch(self, request: Request, technician_id: str) -> Response:
+        return self._run(request, technician_id)
+
+
+class ReactivateTechnicianView(_ModerationActionView):
+    use_case_cls = ReactivateTechnician
     permission_classes = [IsAuthenticated, HasPermission.of(Permission.TECHNICIANS_SUSPEND)]
 
     @audit_action(AuditAction.STATUS_CHANGE, modulo="technicians", entidad="technician")

@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react";
+import { TrendingDown, TrendingUp, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -31,12 +31,14 @@ export function StatCard({
   icon: Icon,
   hint,
   accent = "primary",
+  trend,
 }: {
   label: string;
   value: number | string;
   icon: LucideIcon;
   hint?: string;
   accent?: "primary" | "success" | "warning" | "destructive";
+  trend?: number | null;
 }) {
   const accents = {
     primary: "bg-primary/10 text-primary",
@@ -46,9 +48,9 @@ export function StatCard({
   } as const;
 
   return (
-    <Card>
+    <Card className="transition-shadow hover:shadow-md">
       <CardContent className="flex items-center gap-4 p-5">
-        <div className={cn("flex size-11 items-center justify-center rounded-lg", accents[accent])}>
+        <div className={cn("flex size-11 shrink-0 items-center justify-center rounded-lg", accents[accent])}>
           <Icon className="size-5" />
         </div>
         <div className="min-w-0">
@@ -56,7 +58,23 @@ export function StatCard({
           <p className="text-2xl font-semibold tracking-tight">
             {typeof value === "number" ? formatNumber(value) : value}
           </p>
-          {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+          {trend != null && (
+            <p
+              className={cn(
+                "mt-0.5 flex items-center gap-1 text-xs font-medium",
+                trend >= 0 ? "text-success" : "text-destructive",
+              )}
+            >
+              {trend >= 0 ? (
+                <TrendingUp className="size-3" />
+              ) : (
+                <TrendingDown className="size-3" />
+              )}
+              {trend >= 0 ? "+" : ""}
+              {trend}% vs mes anterior
+            </p>
+          )}
+          {hint && !trend && <p className="text-xs text-muted-foreground">{hint}</p>}
         </div>
       </CardContent>
     </Card>

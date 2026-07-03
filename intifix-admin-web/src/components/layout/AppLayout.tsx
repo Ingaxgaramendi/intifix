@@ -4,16 +4,33 @@ import { Outlet } from "react-router-dom";
 
 import { SidebarContent } from "./Sidebar";
 import { Topbar } from "./Topbar";
+import { cn } from "@/lib/utils";
 
 export function AppLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => localStorage.getItem("intifix.sidebar.collapsed") === "true",
+  );
+
+  const handleToggleSidebar = () => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem("intifix.sidebar.collapsed", String(next));
+      return next;
+    });
+  };
 
   return (
     <div className="flex min-h-screen bg-background">
       {/* Desktop sidebar */}
-      <aside className="hidden w-64 shrink-0 border-r border-sidebar-border lg:block">
-        <div className="sticky top-0 h-screen">
-          <SidebarContent />
+      <aside
+        className={cn(
+          "hidden shrink-0 border-r border-sidebar-border lg:block transition-[width] duration-200",
+          sidebarCollapsed ? "w-16" : "w-64",
+        )}
+      >
+        <div className="sticky top-0 h-screen overflow-hidden">
+          <SidebarContent collapsed={sidebarCollapsed} onToggle={handleToggleSidebar} />
         </div>
       </aside>
 
@@ -23,7 +40,11 @@ export function AppLayout() {
           <Dialog.Overlay className="fixed inset-0 z-40 bg-black/50 lg:hidden" />
           <Dialog.Content className="fixed inset-y-0 left-0 z-50 w-64 outline-none lg:hidden">
             <Dialog.Title className="sr-only">Navegación</Dialog.Title>
-            <SidebarContent onNavigate={() => setMobileOpen(false)} />
+            <SidebarContent
+              onNavigate={() => setMobileOpen(false)}
+              collapsed={false}
+              onToggle={() => {}}
+            />
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>

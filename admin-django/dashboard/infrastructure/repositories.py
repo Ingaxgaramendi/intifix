@@ -26,15 +26,24 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
-from servicios.infrastructure.services_gateway import ServicesGateway
 from shared.domain.exceptions import GatewayError
 from shared.infrastructure.cache.redis_cache import build_key, get_or_set
-from soporte.infrastructure.chat_gateway import ChatGateway
-from tecnicos.infrastructure.technicians_gateway import TechniciansGateway
-from usuarios.infrastructure.users_gateway import UsersGateway
+from shared.infrastructure.http.base_gateway import BaseGateway
 
 from ..domain.entities import ChartPoint, ChartSeries, DashboardMetrics
 from ..domain.ports import MetricsRepository
+
+
+class _ServiceClient(BaseGateway):
+    """Generic gateway to any backend module (all share the :8080 host).
+
+    Lets the dashboard call arbitrary count/list paths without going through the
+    repository gateways, whose ``get(id)`` overrides shadow ``BaseGateway.get``.
+    """
+
+    def __init__(self, service_name: str, *, bearer_token: str | None = None) -> None:
+        self.service_name = service_name  # set before BaseGateway reads it
+        super().__init__(bearer_token=bearer_token)
 
 logger = logging.getLogger("intifix")
 
@@ -77,61 +86,89 @@ class AggregatedMetricsRepository(MetricsRepository):
 
     # -- Collection (uncached fan-out) --------------------------------------
     def _collect_metrics(self) -> dict[str, Any]:
-        # Use Spring's individual count endpoints instead of non-existent /stats endpoints
-        users = self._safe(lambda: UsersGateway(bearer_token=self._token).get(
-            "/api/v1/clientes/total"))
-        techs_total = self._safe(lambda: TechniciansGateway(bearer_token=self._token).get(
-            "/api/v1/technicians/total"))
-        techs_approved = self._safe(lambda: TechniciansGateway(bearer_token=self._token).get(
-            "/api/v1/technicians/total/aprobados"))
-        # For pending technicians, calculate from total - approved
-        techs_pending = {"total": _int(techs_total) - _int(techs_approved)} if techs_total and techs_approved else {}
-        
-        # Services: count by state using individual endpoints
-        services_active = self._safe(lambda: ServicesGateway(bearer_token=self._token).get(
-            "/api/v1/services/estado/EN_PROCESO/count"))
-        services_completed = self._safe(lambda: ServicesGateway(bearer_token=self._token).get(
-            "/api/v1/services/estado/FINALIZADO/count"))
-        
-        # Reports: count pending state
-        reports_pending = self._safe(lambda: ServicesGateway(bearer_token=self._token).get(
-            "/api/v1/services/reportes/estado/PENDIENTE/count"))
-        
-        # Chat: no dedicated stats endpoint, count from list (empty params for all)
-        chat_list = self._safe(lambda: ChatGateway(bearer_token=self._token).get(
-            "/api/v1/chat/conversaciones", params={"page": 0, "page_size": 1}))
-        # Extract total from paginated response
-        chat_total = chat_list.get("total", chat_list.get("count", 0)) if isinstance(chat_list, dict) else 0
-
-        # ``completed_payments`` / ``total_revenue`` are intentionally omitted
-        # (payments module not present yet) and default to 0 on the entity.
+        # Each call is isolated (graceful degradation → 0 on failure).
+        # Payments resumen is fetched once and used for both payment counters.
+        resumen = self._fetch("payments", "/api/v1/payments/resumen")
         return {
-            "registered_users": _int(users, "data", "total"),
-            "approved_technicians": _int(techs_approved, "data", "total"),
-            "pending_technicians": _int(techs_pending, "total"),
-            "active_services": _int(services_active, "data", "total"),
-            "completed_services": _int(services_completed, "data", "total"),
-            "open_reports": _int(reports_pending, "data", "total"),
-            "active_conversations": chat_total if isinstance(chat_total, (int, float)) else _int({"total": chat_total}),
+            "registered_users": self._count(self._fetch(
+                "users", "/api/v1/clientes/total")),
+            "approved_technicians": self._count(self._fetch(
+                "technicians", "/api/v1/technicians/total/aprobados")),
+            "pending_technicians": self._count(self._fetch(
+                "technicians", "/api/v1/technicians/buscar/estado",
+                params={"estado": "PENDIENTE", "page": 0, "size": 1})),
+            "active_services": self._count(self._fetch(
+                "services", "/api/v1/services/estado/EN_PROCESO/count")),
+            "completed_services": self._count(self._fetch(
+                "services", "/api/v1/services/estado/FINALIZADO/count")),
+            "open_reports": self._count(self._fetch(
+                "services", "/api/v1/services/reportes/estado/PENDIENTE/count")),
+            "active_conversations": self._count(self._fetch(
+                "chat", "/api/v1/chat/conversaciones", params={"page": 0, "size": 1})),
+            "completed_payments": _int(resumen, "pagosPagados") if isinstance(resumen, dict) else 0,
+            "total_revenue": _float_val(resumen, "montoTotalProcesado") if isinstance(resumen, dict) else 0.0,
         }
 
     def _collect_series(self, days: int) -> list[dict[str, Any]]:
-        # Spring doesn't have series endpoints, return empty series for now
-        # TODO: Implement series by aggregating from list endpoints or add series endpoints to Spring
+        # Build bar charts from current platform state (no time-series endpoints available).
+        # Payments: distribution by state from /payments/resumen.
+        resumen = self._fetch("payments", "/api/v1/payments/resumen")
+        payment_points: list[dict[str, Any]] = []
+        if isinstance(resumen, dict):
+            conteo = resumen.get("conteoPorEstado") or {}
+            label_map = {
+                "PENDIENTE": "Pendiente", "PAGADO": "Pagado",
+                "REEMBOLSADO": "Reembolsado", "FALLIDO": "Fallido",
+            }
+            if isinstance(conteo, dict):
+                payment_points = [
+                    {"label": label_map.get(k, k), "value": int(v or 0)}
+                    for k, v in conteo.items()
+                ]
+
+        # Services: count per key state.
+        _svc_states = [
+            ("PENDIENTE", "Pendiente"), ("COTIZANDO", "Cotizando"),
+            ("ASIGNADO", "Asignado"), ("EN_PROCESO", "En proceso"),
+            ("FINALIZADO", "Finalizado"), ("CANCELADO", "Cancelado"),
+        ]
+        service_points: list[dict[str, Any]] = []
+        for estado, label in _svc_states:
+            cnt = self._count(self._fetch(
+                "services", f"/api/v1/services/estado/{estado}/count"
+            ))
+            service_points.append({"label": label, "value": cnt})
+
         return [
             {
-                "key": "new_users",
-                "title": "Usuarios nuevos",
-                "type": "line",
-                "points": [],
+                "key": "payment_states",
+                "title": "Distribución de pagos",
+                "type": "bar",
+                "points": payment_points,
             },
             {
-                "key": "services",
-                "title": "Servicios solicitados",
-                "type": "line",
-                "points": [],
+                "key": "service_states",
+                "title": "Servicios por estado",
+                "type": "bar",
+                "points": service_points,
             },
         ]
+
+    def _fetch(self, service: str, path: str, *, params: dict | None = None) -> Any:
+        return self._safe(
+            lambda: _ServiceClient(service, bearer_token=self._token).get(path, params=params)
+        )
+
+    @staticmethod
+    def _count(payload: Any) -> int:
+        """Read a count from a bare number, or from a normalized Page dict."""
+        if isinstance(payload, bool):
+            return 0
+        if isinstance(payload, (int, float)):
+            return int(payload)
+        if isinstance(payload, dict):
+            return _int(payload, "count", "total", "totalElements")
+        return 0
 
     # -- Resilience ----------------------------------------------------------
     @staticmethod
@@ -160,6 +197,15 @@ def _int(data: dict, *keys: str) -> int:
         return int(value) if value is not None else 0
     except (TypeError, ValueError):
         return 0
+
+
+def _float_val(data: dict, *keys: str) -> float:
+    """Read a float from the first present key in ``data``."""
+    value = _first(data, *keys)
+    try:
+        return float(value) if value is not None else 0.0
+    except (TypeError, ValueError):
+        return 0.0
 
 
 def _points(

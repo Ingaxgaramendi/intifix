@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, override_settings
 
 from shared.domain.exceptions import PermissionDeniedError
 from shared.domain.rbac import (
@@ -129,10 +129,10 @@ class RequirePermissionTests(SimpleTestCase):
 class RBACMiddlewareTests(SimpleTestCase):
     def test_resolves_principal_from_valid_token(self) -> None:
         # Patch the decoder so the test does not depend on the env's JWT keys.
-        decoded = _Token(roles=["moderador"], user_id="admin-7")
+        # The backend puts the user id in `sub` and roles in `roles`.
         with patch(
-            "shared.interfaces.rest.rbac_middleware.AccessToken",
-            return_value=decoded,
+            "shared.interfaces.rest.rbac_middleware.decode_bearer",
+            return_value={"sub": "admin-7", "roles": ["moderador"]},
         ):
             class Req:
                 META = {"HTTP_AUTHORIZATION": "Bearer whatever"}
@@ -153,6 +153,60 @@ class RBACMiddlewareTests(SimpleTestCase):
             META = {"HTTP_AUTHORIZATION": "Bearer not-a-jwt"}
 
         self.assertFalse(RBACMiddleware._resolve(Req()).is_authenticated)
+
+
+# -- Backend JWT authentication (Spring contract) ----------------------------
+_TEST_SECRET = "test-hs256-secret-at-least-32-bytes-long!"
+
+
+@override_settings(SIMPLE_JWT={"SIGNING_KEY": _TEST_SECRET, "ALGORITHM": "HS256"})
+class BackendJWTAuthenticationTests(SimpleTestCase):
+    def _encode(self, **claims) -> str:
+        import jwt
+
+        return jwt.encode(claims, _TEST_SECRET, algorithm="HS256")
+
+    def _request(self, token: str | None):
+        class Req:
+            headers = {"Authorization": f"Bearer {token}"} if token else {}
+        return Req()
+
+    def test_authenticates_valid_access_token(self) -> None:
+        from datetime import datetime, timedelta, timezone
+
+        from shared.infrastructure.http.custom_jwt_authentication import (
+            ClaimsBasedJWTAuthentication,
+        )
+
+        exp = datetime.now(timezone.utc) + timedelta(minutes=10)
+        token = self._encode(sub="u-1", correo="a@b.com", roles=["ADMIN"],
+                             typ="access", exp=exp)
+        user, claims = ClaimsBasedJWTAuthentication().authenticate(self._request(token))
+        self.assertEqual(user.id, "u-1")
+        self.assertEqual(user.email, "a@b.com")
+        self.assertTrue(user.is_authenticated)
+        self.assertEqual(claims["roles"], ["ADMIN"])
+
+    def test_rejects_refresh_token(self) -> None:
+        from datetime import datetime, timedelta, timezone
+
+        from rest_framework.exceptions import AuthenticationFailed
+
+        from shared.infrastructure.http.custom_jwt_authentication import (
+            ClaimsBasedJWTAuthentication,
+        )
+
+        exp = datetime.now(timezone.utc) + timedelta(days=1)
+        token = self._encode(sub="u-1", typ="refresh", exp=exp)
+        with self.assertRaises(AuthenticationFailed):
+            ClaimsBasedJWTAuthentication().authenticate(self._request(token))
+
+    def test_no_header_returns_none(self) -> None:
+        from shared.infrastructure.http.custom_jwt_authentication import (
+            ClaimsBasedJWTAuthentication,
+        )
+
+        self.assertIsNone(ClaimsBasedJWTAuthentication().authenticate(self._request(None)))
 
 
 # -- Observability (Prometheus middleware / endpoint) ------------------------

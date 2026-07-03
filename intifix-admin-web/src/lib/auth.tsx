@@ -20,7 +20,11 @@ import { api } from "./api";
 import { type Permission, permissionsFor } from "./rbac";
 import { tokenStore } from "./tokens";
 
+// El backend (Spring) emite los claims como `sub` (id) y `correo` (email);
+// dejamos `user_id`/`email` como fallback por compatibilidad.
 interface JwtClaims {
+  sub?: string | number;
+  correo?: string;
   user_id?: string | number;
   roles?: string[];
   email?: string;
@@ -52,8 +56,8 @@ function principalFromToken(access: string | null): Principal | null {
     if (claims.exp && claims.exp * 1000 < Date.now()) return null;
     const roles = claims.roles ?? [];
     return {
-      id: String(claims.user_id ?? ""),
-      email: claims.email ?? "",
+      id: String(claims.sub ?? claims.user_id ?? ""),
+      email: claims.correo ?? claims.email ?? "",
       roles,
       permissions: permissionsFor(roles),
     };

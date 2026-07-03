@@ -6,8 +6,10 @@
  * token. Note: localStorage is readable by JS, so keep the app XSS-clean; for
  * stricter setups move refresh tokens to an httpOnly cookie on the API side.
  */
-const ACCESS_KEY = "intifix.access";
-const REFRESH_KEY = "intifix.refresh";
+// v2: las claves cambiaron a propósito para descartar tokens de sesiones viejas
+// (firmados con otro secreto) que provocaban "token inválido o expirado" al recargar.
+const ACCESS_KEY = "intifix.admin.v2.access";
+const REFRESH_KEY = "intifix.admin.v2.refresh";
 
 export const tokenStore = {
   get access(): string | null {

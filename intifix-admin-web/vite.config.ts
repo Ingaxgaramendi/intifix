@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => {
       alias: { "@": path.resolve(__dirname, "./src") },
     },
     server: {
-      port: 5173,
+      port: 5174,
       proxy: {
         "/api": { target: backend, changeOrigin: true },
         "/metrics": { target: backend, changeOrigin: true },

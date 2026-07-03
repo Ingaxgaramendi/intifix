@@ -31,5 +31,9 @@ class TechnicianRepository(abc.ABC):
         ...
 
     @abc.abstractmethod
+    def reactivate(self, technician_id: str) -> Technician:
+        ...
+
+    @abc.abstractmethod
     def list_documents(self, technician_id: str) -> list[TechnicianDocument]:
         ...

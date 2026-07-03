@@ -23,7 +23,23 @@ export const api: AxiosInstance = axios.create({
 
 api.interceptors.request.use((config) => {
   const token = tokenStore.access;
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (token) {
+    // Never send an expired token — doing so causes 401 on AllowAny endpoints
+    // (e.g. the login endpoint itself) because Django's JWT authenticator
+    // raises AuthenticationFailed before the view gets a chance to run.
+    let expired = false;
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+      expired = typeof payload.exp === "number" && payload.exp * 1000 < Date.now();
+    } catch {
+      expired = true;
+    }
+    if (!expired) {
+      config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      tokenStore.clear();
+    }
+  }
   return config;
 });
 
